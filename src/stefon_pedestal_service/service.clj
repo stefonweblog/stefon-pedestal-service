@@ -3,7 +3,55 @@
               [io.pedestal.service.http.route :as route]
               [io.pedestal.service.http.body-params :as body-params]
               [io.pedestal.service.http.route.definition :refer [defroutes]]
-              [ring.util.response :as ring-resp]))
+              [ring.util.response :as ring-resp]
+
+              jig
+              [jig.web
+               [app :refer (add-routes)]]
+              [io.pedestal.service.interceptor :as interceptor :refer (defbefore definterceptorfn)]
+
+              [stefon-webui-common.core :as common])
+    (:import (jig Lifecycle))
+
+    )
+
+
+
+(defbefore root-page
+  [{:keys [request system url-for] :as context}]
+  (assoc context :response
+         (ring-resp/redirect (url-for ::index-page))))
+
+(defbefore hello-world [context]
+
+  (println ">> defbefore helloworld CALLED > " context)
+  (let [result (common/handle-hello-world)]
+
+    (println ">> RESULT > " result)
+    result))
+
+
+;; A Jig Component
+(deftype Component [config]
+  Lifecycle
+
+  (init [_ system]
+
+    ;;(println ">> init CALLED > " system)
+    (add-routes system config
+                ["/" {:get root-page}
+                 "/helloworld" {:get hello-world}]))
+
+  (start [_ system]
+
+    ;;(println ">> start CALLED > " system)
+    system)
+
+  (stop [_ system]
+
+    ;;(println ">> stop CALLED > " system)
+    system))
+
 
 (defn about-page
   [request]
